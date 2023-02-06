@@ -11,17 +11,14 @@
  * - invalid_scope
  */
 export class OAuth2Error extends Error {
+  oauth2Code: string
 
-  oauth2Code: string;
-  httpCode: number;
+  httpCode: number
 
   constructor(message: string, oauth2Code: string, httpCode: number) {
+    super(message)
 
-    super(message);
-
-    this.oauth2Code = oauth2Code;
-    this.httpCode = httpCode;
-
+    this.oauth2Code = oauth2Code
+    this.httpCode = httpCode
   }
-
 }

@@ -1,29 +1,9 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "target": "es2019",
-
-        "strict": true,
-        "noFallthroughCasesInSwitch": true,
-        "experimentalDecorators": true,
-        "noUnusedLocals": true,
-
-        "moduleResolution": "node",
-        "sourceMap": true,
-        "outDir": "dist",
-        "baseUrl": ".",
-        "paths": {
-            "*": [
-                "src/types/*"
-            ]
-        },
-        "lib": [
-          "DOM",
-          "ES2019"
-        ],
-        "declaration": true
-    },
-    "include": [
-        "src/**/*"
-    ]
+  "extends": "@relynk/tsconfig/node.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "dist"
+  },
+  "include": ["src/"],
+  "exclude": ["node_modules", ".turbo", "coverage", "dist", "src/**/*.test.ts"]
 }

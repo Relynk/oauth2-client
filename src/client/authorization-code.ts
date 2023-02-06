@@ -1,55 +1,51 @@
-import { OAuth2Client, tokenResponseToOAuth2Token, generateQueryString } from '../client';
-import { OAuth2Token } from '../token';
-import { AuthorizationCodeRequest, AuthorizationQueryParams } from '../messages';
-import { OAuth2Error } from '../error';
+// eslint-disable-next-line import/no-cycle
+import { OAuth2Client, tokenResponseToOAuth2Token, generateQueryString } from "../client"
+import { OAuth2Token } from "../token"
+import { AuthorizationCodeRequest, AuthorizationQueryParams } from "../messages"
+import { OAuth2Error } from "../error"
 
 type GetAuthorizeUrlParams = {
   /**
    * Where to redirect the user back to after authentication.
    */
-  redirectUri: string;
+  redirectUri: string
 
   /**
    * The 'state' is a string that can be sent to the authentication server,
    * and back to the redirectUri.
    */
-  state?: string;
+  state?: string
 
   /**
    * Code verifier for PKCE support. If you used this in the redirect
    * to the authorization endpoint, you also need to use this again
    * when getting the access_token on the token endpoint.
    */
-  codeVerifier?: string;
+  codeVerifier?: string
 
   /**
    * List of scopes.
    */
-  scope?: string[];
+  scope?: string[]
 }
 
 type ValidateResponseResult = {
-
   /**
    * The authorization code. This code should be used to obtain an access token.
    */
-  code: string;
+  code: string
 
   /**
    * List of scopes that the client requested.
    */
-  scope?: string[];
-
+  scope?: string[]
 }
 
 export class OAuth2AuthorizationCodeClient {
-
-  client: OAuth2Client;
+  client: OAuth2Client
 
   constructor(client: OAuth2Client) {
-
-    this.client = client;
-
+    this.client = client
   }
 
   /**
@@ -57,45 +53,38 @@ export class OAuth2AuthorizationCodeClient {
    * authorization_code flow.
    */
   async getAuthorizeUri(params: GetAuthorizeUrlParams): Promise<string> {
-
-    const [
-      codeChallenge,
-      authorizationEndpoint
-    ] = await Promise.all([
+    const [codeChallenge, authorizationEndpoint] = await Promise.all([
       params.codeVerifier ? getCodeChallenge(params.codeVerifier) : undefined,
-      this.client.getEndpoint('authorizationEndpoint')
-    ]);
+      this.client.getEndpoint("authorizationEndpoint"),
+    ])
 
     const query: AuthorizationQueryParams = {
       client_id: this.client.settings.clientId,
-      response_type: 'code',
+      response_type: "code",
       redirect_uri: params.redirectUri,
       code_challenge_method: codeChallenge?.[0],
       code_challenge: codeChallenge?.[1],
-    };
+    }
     if (params.state) {
-      query.state = params.state;
+      query.state = params.state
     }
     if (params.scope) {
-      query.scope = params.scope.join(' ');
+      query.scope = params.scope.join(" ")
     }
 
-    return authorizationEndpoint + '?' + generateQueryString(query);
-
+    return `${authorizationEndpoint}?${generateQueryString(query)}`
   }
 
-  async getTokenFromCodeRedirect(url: string|URL, params: {redirectUri: string; state?: string; codeVerifier?:string} ): Promise<OAuth2Token> {
-
+  async getTokenFromCodeRedirect(url: string | URL, params: { redirectUri: string; state?: string; codeVerifier?: string }): Promise<OAuth2Token> {
     const { code } = await this.validateResponse(url, {
-      state: params.state
-    });
+      state: params.state,
+    })
 
     return this.getToken({
       code,
       redirectUri: params.redirectUri,
       codeVerifier: params.codeVerifier,
-    });
-
+    })
   }
 
   /**
@@ -105,127 +94,103 @@ export class OAuth2AuthorizationCodeClient {
    * This function takes the url and validate the response. If the user
    * redirected back with an error, an error will be thrown.
    */
-  async validateResponse(url: string|URL, params: {state?: string}): Promise<ValidateResponseResult> {
+  async validateResponse(url: string | URL, params: { state?: string }): Promise<ValidateResponseResult> {
+    const queryParams = new URL(url).searchParams
 
-    const queryParams = new URL(url).searchParams;
-
-    if (queryParams.has('error')) {
-      throw new OAuth2Error(
-        queryParams.get('error_description') ?? 'OAuth2 error',
-        queryParams.get('error')!,
-        0,
-      );
+    if (queryParams.has("error")) {
+      throw new OAuth2Error(queryParams.get("error_description") ?? "OAuth2 error", queryParams.get("error")!, 0)
     }
 
-    if (!queryParams.has('code')) throw new Error(`The url did not contain a code parameter ${url}`);
-    if (!queryParams.has('state')) throw new Error(`The url did not contain state parameter ${url}`);
+    if (!queryParams.has("code")) throw new Error(`The url did not contain a code parameter ${url}`)
+    if (!queryParams.has("state")) throw new Error(`The url did not contain state parameter ${url}`)
 
-    if (params.state && params.state !== queryParams.get('state')) {
-      throw new Error(`The "state" parameter in the url did not match the expected value of ${params.state}`);
+    if (params.state && params.state !== queryParams.get("state")) {
+      throw new Error(`The "state" parameter in the url did not match the expected value of ${params.state}`)
     }
 
     return {
-      code: queryParams.get('code')!,
-      scope: queryParams.has('scope') ? queryParams.get('scope')!.split(' ') : undefined,
-    };
-
+      code: queryParams.get("code")!,
+      scope: queryParams.has("scope") ? queryParams.get("scope")!.split(" ") : undefined,
+    }
   }
-
 
   /**
    * Receives an OAuth2 token using 'authorization_code' grant
    */
   async getToken(params: { code: string; redirectUri: string; codeVerifier?: string }): Promise<OAuth2Token> {
-
-    const body:AuthorizationCodeRequest = {
-      grant_type: 'authorization_code',
+    const body: AuthorizationCodeRequest = {
+      grant_type: "authorization_code",
       code: params.code,
       redirect_uri: params.redirectUri,
       code_verifier: params.codeVerifier,
-    };
-    return tokenResponseToOAuth2Token(this.client.request('tokenEndpoint', body));
-
+    }
+    return tokenResponseToOAuth2Token(this.client.request("tokenEndpoint", body))
   }
-
-
 }
 
 export async function generateCodeVerifier(): Promise<string> {
-
-  const webCrypto = getWebCrypto();
+  const webCrypto = getWebCrypto()
   if (webCrypto) {
-    const arr = new Uint8Array(32);
-    webCrypto.getRandomValues(arr);
-    return base64Url(arr);
-  } else {
-
-    // Old node doesn't have 'webcrypto', so this is a fallback
-
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const nodeCrypto = require('crypto');
-    return new Promise<string>((res, rej) => {
-      nodeCrypto.randomBytes(32, (err:Error, buf: Buffer) => {
-        if (err) rej(err);
-        res(buf.toString('base64url'));
-      });
-    });
-
+    const arr = new Uint8Array(32)
+    webCrypto.getRandomValues(arr)
+    return base64Url(arr)
   }
 
+  // Old node doesn't have 'webcrypto', so this is a fallback
+
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const nodeCrypto = require("crypto")
+  return new Promise<string>((res, rej) => {
+    nodeCrypto.randomBytes(32, (err: Error, buf: Buffer) => {
+      if (err) rej(err)
+      res(buf.toString("base64url"))
+    })
+  })
 }
 
-export async function getCodeChallenge(codeVerifier: string): Promise<['plain' | 'S256', string]> {
-
-  const webCrypto = getWebCrypto();
+export async function getCodeChallenge(codeVerifier: string): Promise<["plain" | "S256", string]> {
+  const webCrypto = getWebCrypto()
   if (webCrypto?.subtle) {
-    return ['S256', base64Url(await webCrypto.subtle.digest('SHA-256', stringToBuffer(codeVerifier)))];
-  } else {
-    // Node 14.x fallback
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const nodeCrypto = require('crypto');
-    const hash = nodeCrypto.createHash('sha256');
-    hash.update(stringToBuffer(codeVerifier));
-    return ['S256', hash.digest('base64url')];
+    return ["S256", base64Url(await webCrypto.subtle.digest("SHA-256", stringToBuffer(codeVerifier)))]
   }
-
+  // Node 14.x fallback
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const nodeCrypto = require("crypto")
+  const hash = nodeCrypto.createHash("sha256")
+  hash.update(stringToBuffer(codeVerifier))
+  return ["S256", hash.digest("base64url")]
 }
 
 function getWebCrypto() {
-
   // Browsers
-  if ((typeof window !== 'undefined' && window.crypto)) {
-    return window.crypto;
+  if (typeof window !== "undefined" && window.crypto) {
+    return window.crypto
   }
   // Web workers possibly
-  if ((typeof self !== 'undefined' && self.crypto)) {
-    return self.crypto;
+  if (typeof self !== "undefined" && self.crypto) {
+    return self.crypto
   }
   // Node
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const crypto = require('crypto');
+  const crypto = require("crypto")
   if (crypto.webcrypto) {
-    return crypto.webcrypto;
+    return crypto.webcrypto
   }
-  return null;
-
+  return null
 }
 
 function stringToBuffer(input: string): ArrayBuffer {
-
-  const buf = new Uint8Array(input.length);
-  for(let i=0; i<input.length;i++) {
-    buf[i] = input.charCodeAt(i) & 0xFF;
+  const buf = new Uint8Array(input.length)
+  for (let i = 0; i < input.length; i++) {
+    // eslint-disable-next-line no-bitwise
+    buf[i] = input.charCodeAt(i) & 0xff
   }
-  return buf;
-
+  return buf
 }
 
 function base64Url(buf: ArrayBuffer) {
-  return (
-    btoa(String.fromCharCode(...new Uint8Array(buf)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '')
-  );
+  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "")
 }
-
