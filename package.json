@@ -1,12 +1,13 @@
 {
-  "name": "@badgateway/oauth2-client",
+  "name": "@relynk/oauth2-client",
   "version": "2.0.17",
   "description": "OAuth2 client for browsers and Node.js. Tiny footprint, PKCE support",
   "main": "dist/index.js",
   "scripts": {
-    "test": "make test",
-    "prepublishOnly": "make build",
-    "lint": "make lint"
+    "build": "tsc",
+    "dev": "tsc -w",
+    "dev-packages": "tsc -w",
+    "lint": "eslint src --fix"
   },
   "repository": {
     "type": "git",
@@ -43,9 +44,7 @@
     "node-fetch": "^2.6.7",
     "ts-loader": "^9.2.6",
     "ts-node": "^10.7.0",
-    "typescript": "^4.4.4",
-    "webpack": "^5.60.0",
-    "webpack-cli": "^4.9.1"
+    "typescript": "^4.4.4"
   },
   "browser": "browser/oauth2-client.min.js",
   "files": [
