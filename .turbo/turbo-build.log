@@ -1,2 +1,2 @@
-[35m@relynk/oauth2-client:build[0m: cache hit, replaying output [2mb6c666c4cfadd3d5[0m
-[35m@relynk/oauth2-client:build: [0m$ tsc
+[32m@relynk/oauth2-client:build[0m: cache hit, replaying output [2md3ff6e7876eac55b[0m
+[32m@relynk/oauth2-client:build: [0m$ tsc
