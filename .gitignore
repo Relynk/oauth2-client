@@ -15,3 +15,7 @@
 
 # nyc
 /.nyc_output
+
+/.turbo/**
+
+tsconfig.tsbuildinfo
