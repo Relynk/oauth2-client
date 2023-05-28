@@ -259,7 +259,7 @@ export class OAuth2Client {
     })
 
     if (resp.ok) {
-      return await resp.json()
+      return resp.json()
     }
 
     let jsonError
