@@ -19,3 +19,9 @@
 /.turbo/**
 
 tsconfig.tsbuildinfo
+
+
+# turbo
+.turbo
+.turbo/**/*
+.turbo/**
